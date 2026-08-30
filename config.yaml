@@ -380,6 +380,10 @@ auxiliary:
 #            "off"        → usar sempre as tools nativas (built-in)
 # Navegador local: Chrome/Edge/Chromium por padrão; `hermes browser connect`
 # para anexar a um navegador já aberto (CDP).
+# ── Protocolo visual-cognitivo ──
+# "browser como usuário de 1ª vez": use o browser_vision(annotate=true) para
+# enxergar a tela (labels [N] → refs @eN), agir em passos, verificar e aprender.
+# Skill: visual-browser-user-protocol · Journal: HERMES_HOME/protocol/browser-learning/
 browser:
   backend: ""            # auto
   headed: false          # headless (sem janela visível)

@@ -166,6 +166,16 @@ ollama pull llama3.3:70b
 ### ✅ Commits automáticos no branch (agora globais / multi-repo)
 Regra persistente no `SOUL.md` + skill **`git-commit-workflow`**: como você **sempre fala o repositório no início**, o agente trabalha **dentro desse repositório** e, ao **final de cada tarefa**, faz `git add` + `git commit` **no branch atual dele** (padrão conventional commits; **nunca** `push --force`). Push remoto só quando você pedir.
 
+### 🔭 Protocolo Visual-Cognitivo (navegar como usuário que está vendo pela 1ª vez)
+Skill **`visual-browser-user-protocol`** + documento em [`PROTOCOLOS/visual-user-browser.md`](PROTOCOLOS/visual-user-browser.md).
+
+O agente **não assume que conhece a interface**: ele **enxerga a tela** com uma IA de visão (`browser_vision annotate`, refs `@eN`), age em passos pequenos, **verifica visualmente** o resultado e **aprende incrementalmente** — salvando um *learning journal* persistente em `HERMES_HOME/protocol/browser-learning/` que é consultado na próxima sessão.
+
+```
+OBSERVAR → INTERPRETAR → AGIR → VERIFICAR → REGISTRAR
+```
+Basta pedir: *"use o protocolo visual e explore o sistema X"*.
+
 ---
 
 ## ⚙️ Configuração
