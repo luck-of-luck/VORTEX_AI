@@ -15,6 +15,11 @@ providers:
   ollama-local:
     base_url: "http://127.0.0.1:11434/v1"
     api_mode: chat_completions
+  lmstudio-local:
+    # LM Studio: abra o app → aba Developer → habilite "Start Server"
+    # (rodando em http://127.0.0.1:1234/v1). Modelos instalados aparecem em /v1/models.
+    base_url: "http://127.0.0.1:1234/v1"
+    api_mode: chat_completions
 
 fallback_model:
   # ── Cline (usage-billing) — modelos gratuitos/baratos via api.cline.bot ──
@@ -27,6 +32,15 @@ fallback_model:
     model: cline/cline-pass/qwen3.7-plus
   - provider: cline
     model: cline/cline-pass/glm-5.2
+  # ── GitHub Copilot / GitHub Models (COPILOT_GITHUB_TOKEN ou GH_TOKEN) ──
+  - provider: copilot
+    model: gpt-4.1
+  # ── Claude / Anthropic (ANTHROPIC_API_KEY) ──
+  - provider: anthropic
+    model: claude-sonnet-4-6
+  # ── Kimi / Moonshot (KIMI_API_KEY) ──
+  - provider: kimi-coding
+    model: kimi-k2-turbo-preview
   # ── Camada gratuita (OpenRouter :free) ──
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
@@ -34,11 +48,18 @@ fallback_model:
     model: qwen/qwen-2.5-72b-instruct:free
   - provider: openrouter
     model: nvidia/nemotron-nano-2-20b-instruct:free
+  # ── LM Studio local (app aberto + servidor :1234 habilitado) ──
+  - provider: lmstudio-local
+    model: "qwen2.5-coder-14b-instruct"   # ajuste p/ um modelo que instalou no app
   # ── Camada local (PC) — Ollama (offline, ilimitada) ──
   - provider: ollama-local
     model: "qwen2.5-coder:32b"
   - provider: ollama-local
     model: "llama3.3:70b"
+  - provider: ollama-local
+    model: "deepseek-r1:32b"
+  - provider: ollama-local
+    model: "qwen2.5:14b"
 
 # ── Fallback principal — mesma chain, na mesma ordem ──
 fallback_providers:
@@ -52,6 +73,15 @@ fallback_providers:
     model: cline/cline-pass/qwen3.7-plus
   - provider: cline
     model: cline/cline-pass/glm-5.2
+  # ── GitHub Copilot / GitHub Models (COPILOT_GITHUB_TOKEN ou GH_TOKEN) ──
+  - provider: copilot
+    model: gpt-4.1
+  # ── Claude / Anthropic (ANTHROPIC_API_KEY) ──
+  - provider: anthropic
+    model: claude-sonnet-4-6
+  # ── Kimi / Moonshot (KIMI_API_KEY) ──
+  - provider: kimi-coding
+    model: kimi-k2-turbo-preview
   # ── Camada gratuita (OpenRouter :free) ──
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
@@ -59,11 +89,18 @@ fallback_providers:
     model: qwen/qwen-2.5-72b-instruct:free
   - provider: openrouter
     model: nvidia/nemotron-nano-2-20b-instruct:free
+  # ── LM Studio local (app aberto + servidor :1234 habilitado) ──
+  - provider: lmstudio-local
+    model: "qwen2.5-coder-14b-instruct"   # ajuste p/ um modelo que instalou no app
   # ── Camada local (PC) — Ollama (offline, ilimitada) ──
   - provider: ollama-local
     model: "qwen2.5-coder:32b"
   - provider: ollama-local
     model: "llama3.3:70b"
+  - provider: ollama-local
+    model: "deepseek-r1:32b"
+  - provider: ollama-local
+    model: "qwen2.5:14b"
 
 # ── Cérebro — nível máximo: raciocínio, memória, aprendizado ──
 # Raciocínio ultra, memória holográfica, curator agressivo, background review

@@ -163,6 +163,38 @@ ollama pull llama3.3:70b
 
 > ℹ️ **ClinePass** é uma assinatura opcional de **US$ 9,99/mês** (2–5x o uso em modelos abertos) — sem ela, os modelos Cline ainda funcionam por uso/experimentação. Os **Cline Free Models** (tag "FREE") só funcionam no IDE/CLI da Cline, não via API.
 
+## 🔌 Integração com todas as IAs do seu PC
+
+O `config.yaml` já integra os **provedores** e os **CLIs** das IAs instaladas
+(skill **`ai-app-orchestration`**). Cadeia de fallback automática:
+
+| Ordem | IA | Como ativa |
+|------|-----|-----------|
+| 1-5 | **Cline** (minimax/deepseek/ClinePass) | `CLINE_API_KEY` |
+| 6 | **GitHub Copilot** (gpt-4.1) | `COPILOT_GITHUB_TOKEN`/`GH_TOKEN` |
+| 7 | **Claude / Anthropic** | `ANTHROPIC_API_KEY` |
+| 8 | **Kimi / Moonshot** | `KIMI_API_KEY` |
+| 9-11 | OpenRouter `:free` | `OPENROUTER_API_KEY` |
+| 12 | **LM Studio** (local) | abra o app → Developer → Start Server |
+| 13-16 | **Ollama** (local, offline) | `ollama serve` + modelos instalados |
+
+**Delegar tarefas a outros agentes** (Claude Code, Cursor, Qoder, Zed, Kimi,
+OpenCode) via terminal — headless, um por vez:
+
+```bash
+claude -p "implemente X"        # Claude Code headless
+cursor run "implemente X"       # Cursor
+qoder run "implemente X"        # Qoder
+kimi -p "implemente X"          # Kimi
+opencode run "implemente X"     # OpenCode
+zed --agent -p "implemente X"   # Zed (experimental)
+```
+
+Apps sem CLI (**Replit**, **IBM Bob**, **Antigravity**, **ChatGPT**) são
+usados pelo **protocolo visual** (navegador como usuário).
+
+---
+
 ### ✅ Commits automáticos no branch (agora globais / multi-repo)
 Regra persistente no `SOUL.md` + skill **`git-commit-workflow`**: como você **sempre fala o repositório no início**, o agente trabalha **dentro desse repositório** e, ao **final de cada tarefa**, faz `git add` + `git commit` **no branch atual dele** (padrão conventional commits; **nunca** `push --force`). Push remoto só quando você pedir.
 
