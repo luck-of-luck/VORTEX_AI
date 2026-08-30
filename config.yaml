@@ -2,11 +2,11 @@
 # HERMES_HOME = raiz do repositório. Gerado a partir de hermes_cli/config_defaults.py.
 # Fallback: ao esgotar tokens (429/402/529/503/context_length) troca automaticamente
 
-# ── Modelo principal: potência máxima (visão nativa + contexto enorme) ──
-# Claude Opus 4.5: lê/edita grandes bases de código com contexto gigante e
-# análisa imagens/screenshots nativamente. Swap para um modelo de 1M de
-# contexto (google/gemini-3-flash) quando precisar de contexto máximo.
-model: openrouter/anthropic/claude-opus-4-5
+# ── Modelo principal: Cline (grátis/experimentação) ──
+# Cline usage-billing oferece cotas gratuitas de experimentação em alguns
+# modelos. minimax/m2.5 = "free experimentation" na doc oficial da Cline.
+# Requer conta em app.cline.bot + CLINE_API_KEY no .env.
+model: cline/minimax/minimax-m2.5
 
 # ── Provedores locais (gratuitos) — Ollama / LM Studio no seu PC ──
 # Entradas locais só funcionam com o serviço rodando
@@ -17,14 +17,16 @@ providers:
     api_mode: chat_completions
 
 fallback_model:
-  - provider: openrouter
-    model: anthropic/claude-sonnet-4-5
-  - provider: openrouter
-    model: google/gemini-3-flash
-  - provider: opencode-zen
-    model: opencode/claude-haiku-4-5
-  - provider: copilot
-    model: gpt-4.1
+  # ── Cline (usage-billing) — modelos gratuitos/baratos via api.cline.bot ──
+  - provider: cline
+    model: cline/deepseek/deepseek-chat
+  # ── ClinePass (assinatura $9.99/mês; 2-5x uso em modelos abertos) ──
+  - provider: cline
+    model: cline/cline-pass/deepseek-v4-flash
+  - provider: cline
+    model: cline/cline-pass/qwen3.7-plus
+  - provider: cline
+    model: cline/cline-pass/glm-5.2
   # ── Camada gratuita (OpenRouter :free) ──
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
@@ -32,7 +34,7 @@ fallback_model:
     model: qwen/qwen-2.5-72b-instruct:free
   - provider: openrouter
     model: nvidia/nemotron-nano-2-20b-instruct:free
-  # ── Camada local (PC) — Ollama ──
+  # ── Camada local (PC) — Ollama (offline, ilimitada) ──
   - provider: ollama-local
     model: "qwen2.5-coder:32b"
   - provider: ollama-local
@@ -40,14 +42,16 @@ fallback_model:
 
 # ── Fallback principal — mesma chain, na mesma ordem ──
 fallback_providers:
-  - provider: openrouter
-    model: anthropic/claude-sonnet-4-5
-  - provider: openrouter
-    model: google/gemini-3-flash
-  - provider: opencode-zen
-    model: opencode/claude-haiku-4-5
-  - provider: copilot
-    model: gpt-4.1
+  # ── Cline (usage-billing) — modelos gratuitos/baratos via api.cline.bot ──
+  - provider: cline
+    model: cline/deepseek/deepseek-chat
+  # ── ClinePass (assinatura $9.99/mês; 2-5x uso em modelos abertos) ──
+  - provider: cline
+    model: cline/cline-pass/deepseek-v4-flash
+  - provider: cline
+    model: cline/cline-pass/qwen3.7-plus
+  - provider: cline
+    model: cline/cline-pass/glm-5.2
   # ── Camada gratuita (OpenRouter :free) ──
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
@@ -55,7 +59,7 @@ fallback_providers:
     model: qwen/qwen-2.5-72b-instruct:free
   - provider: openrouter
     model: nvidia/nemotron-nano-2-20b-instruct:free
-  # ── Camada local (PC) — Ollama ──
+  # ── Camada local (PC) — Ollama (offline, ilimitada) ──
   - provider: ollama-local
     model: "qwen2.5-coder:32b"
   - provider: ollama-local
@@ -303,9 +307,9 @@ openrouter:
 sync:
   opencode_env: true
 
-# ── Auxiliares — cérebro máximo: reasoning alto, visão e compressão com modelo forte ──
+# ── Auxiliares — custo zero, visão via Cline ──
 auxiliary:
-  free_only: false
+  free_only: true
   transient_retries: 3
   openrouter_model: ""
   compression:
@@ -322,9 +326,9 @@ auxiliary:
     reasoning_effort: low
   vision:
     # IA que "enxerga": analisa screenshots, imagens e leitura de tela
-    # (browser_vision, vision_analyze). Gemini Flash = visão + contexto 1M.
-    provider: openrouter
-    model: "google/gemini-3-flash"
+    # (browser_vision, vision_analyze). gpt-4o = multimodal na Cline.
+    provider: cline
+    model: "cline/openai/gpt-4o"
     timeout: 120
     reasoning_effort: high
   curator:

@@ -137,21 +137,34 @@ Nativo: `browser_navigate`, `browser_click`, `browser_type`, `browser_snapshot`,
 Gere uma **API key** no n8n (**Settings → API**), preencha `N8N_BASE_URL` e `N8N_API_KEY` no `.env`, e o agente ganha ferramentas para listar, inspecionar, exportar e executar workflows n8n.
 
 ### 🧠 Esquema inteligente — visão de tela + contexto gigante
-- **Modelo principal:** Claude Opus 4.5 — raciocínio profundo, visão nativa e contexto enorme para **ler/editar muitos arquivos grandes**.
-- **Leitura de tela:** `auxiliary.vision` aponta para o **Gemini 3 Flash** (visão + contexto 1M) — usado por `browser_vision`, `vision_analyze` e análise de imagens.
+- **Modelo principal:** **MiniMax M2.5 via Cline** — "experimentação gratuita" (doc oficial da Cline), contexto de 1M e bom para leitura/edição de muitos arquivos.
+- **Leitura de tela:** `auxiliary.vision` via **Cline** (`gpt-4o`, multimodal) — usado por `browser_vision`, `vision_analyze` e análise de imagens.
 - **Contextos enormes:** limites de leitura elevados (`context_file_max_chars`/`file_read_max_chars` = 400k, saída de tools de até 150k) para o agente trabalhar com bases de código inteiras.
 
-### ⚡ Muito mais agentes gratuitos
-- **Chain de fallback rica** no `config.yaml`: troca automática entre OpenRouter (pago), **camada gratuita** (`:free` da OpenRouter) e **modelos locais** (Ollama).
-- **Ollama local (grátis, offline, ilimitado):** instale em [ollama.com](https://ollama.com), baixe modelos e o provider `ollama-local` (já no `config.yaml`) é usado automaticamente quando os serviços online falham:
-  ```bash
-  ollama pull qwen2.5-coder:32b
-  ollama pull llama3.3:70b
-  ```
-- Copilot / OpenCode Zen / GitHub Models também estão na cadeia.
+### ⚡ Muito mais agentes gratuitos (zero IAs pagas)
+A cadeia de fallback (`config.yaml`) é **100% gratuita/barata** e troca automaticamente quando o principal falha:
 
-### ✅ Commits automáticos no branch
-Regra persistente no `SOUL.md` + skill **`git-commit-workflow`**: ao **final de cada tarefa**, o agente faz `git add` + `git commit` **no branch atual** com mensagem no padrão conventional commits (e **nunca** `push --force`). Push remoto só quando você pedir.
+| Camada | Provedor | Modelos |
+|--------|----------|---------|
+| 🥇 Cline billing | `api.cline.bot` | `minimax/minimax-m2.5` (principal), `deepseek/deepseek-chat` |
+| 🥈 ClinePass | `api.cline.bot` | `cline-pass/deepseek-v4-flash`, `cline-pass/qwen3.7-plus`, `cline-pass/glm-5.2` |
+| 🥉 OpenRouter **`:free`** | openrouter.ai | Llama 3.3 70B, Qwen 2.5 72B, Nemotron |
+| 🏠 Local (Ollama) | seu PC | `qwen2.5-coder:32b`, `llama3.3:70b` (offline, ilimitado) |
+
+```bash
+# 1) Crie sua chave gratuita/barata do Cline
+#    app.cline.bot → Settings > API Keys → salve em .env:
+CLINE_API_KEY=sk-...
+
+# 2) Opcional — Ollama totalmente grátis e offline
+ollama pull qwen2.5-coder:32b
+ollama pull llama3.3:70b
+```
+
+> ℹ️ **ClinePass** é uma assinatura opcional de **US$ 9,99/mês** (2–5x o uso em modelos abertos) — sem ela, os modelos Cline ainda funcionam por uso/experimentação. Os **Cline Free Models** (tag "FREE") só funcionam no IDE/CLI da Cline, não via API.
+
+### ✅ Commits automáticos no branch (agora globais / multi-repo)
+Regra persistente no `SOUL.md` + skill **`git-commit-workflow`**: como você **sempre fala o repositório no início**, o agente trabalha **dentro desse repositório** e, ao **final de cada tarefa**, faz `git add` + `git commit` **no branch atual dele** (padrão conventional commits; **nunca** `push --force`). Push remoto só quando você pedir.
 
 ---
 
