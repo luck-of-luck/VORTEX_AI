@@ -11,7 +11,8 @@
 # =====================================================================
 param(
     [switch]$SkipPythonCheck,
-    [string]$Extras = "messaging,mcp"
+    [string]$Extras = "messaging,mcp",
+    [switch]$WithN8nMCP
 )
 
 $ErrorActionPreference = "Stop"
@@ -124,6 +125,25 @@ else {
     Write-Host "      .env ja existe (mantido)." -ForegroundColor DarkGray
 }
 
+# ------------------------------------------------------- [6] n8n MCP (opcional)
+if ($WithN8nMCP) {
+    Write-Host "[6/6] Instalando n8n MCP (hermes mcp install n8n)..." -ForegroundColor Cyan
+    $hermBin = Join-Path $root "bin\hermes.exe"
+    if (Test-Path $hermBin) {
+        & $hermBin mcp install n8n
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "      n8n MCP: nao concluido automaticamente." -ForegroundColor Yellow
+            Write-Host "      Rode manualmente depois:  hermes mcp install n8n" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "      n8n MCP instalado. Preencha N8N_API_KEY no .env se necessario." -ForegroundColor Green
+        }
+    }
+    else {
+        Write-Host "      bin\hermes.exe nao encontrado; instale n8n manualmente." -ForegroundColor Yellow
+    }
+}
+
 # ------------------------------------------------------------ Concluido
 Write-Host ""
 Write-Host "  Concluido!" -ForegroundColor Green
@@ -131,4 +151,10 @@ Write-Host "  Agora teste:" -ForegroundColor White
 Write-Host "    hermes-agent\venv\Scripts\hermes.exe --version" -ForegroundColor White
 Write-Host "  Ou use os launchers:" -ForegroundColor White
 Write-Host "    .\Abrir-Hermes.bat | .\Abrir-Hermes-TUI.bat | .\Iniciar.ps1" -ForegroundColor White
+Write-Host ""
+Write-Host "  Dicas de potencia:" -ForegroundColor Cyan
+Write-Host "    * Navegador: pedir ao Hermes para navegar/scraping usa Chrome local." -ForegroundColor DarkGray
+Write-Host "    * Modelos locais gratis: instale Ollama (ollama.com) e baixe modelos." -ForegroundColor DarkGray
+Write-Host "      Ex.: ollama pull qwen2.5-coder:32b  (provider ollama-local ja configurado)" -ForegroundColor DarkGray
+Write-Host "    * n8n: se usou -WithN8nMCP, gere API key em n8n > Settings > API." -ForegroundColor DarkGray
 Write-Host ""

@@ -83,7 +83,7 @@ O `setup.ps1` faz tudo de forma **reprodutível** (usa o `uv.lock` do hermes-age
 | 5 | Cria `.env` a partir do `.env.example` |
 
 > Extras opcionais (mensageria, MCP, etc.): `setup.ps1 -Extras "messaging,mcp"` (padrão).
-> Também suporta `-SkipPythonCheck`.
+> Instala também o bridge do **n8n** com `-WithN8nMCP`. Suporta `-SkipPythonCheck`.
 
 ---
 
@@ -120,6 +120,38 @@ O `opencode.jsonc` já conecta o **MCP `hermes`** (`bin\hermes.exe mcp serve`) a
 ```
 
 Ou use `gateway-service\Hermes_Gateway.cmd` (e o `.vbs` para iniciar oculto / desanexado).
+
+---
+
+## ⚡ Potência extra (já configurada)
+
+### 🔍 Navegador automatizado
+Nativo: `browser_navigate`, `browser_click`, `browser_type`, `browser_snapshot`, `browser_vision` (tira **screenshot e lê a tela com IA**), entre outros. Basta pedir ao Hermes algo como *"abra o site X e extraia Y"*. Usa o **Chrome/Edge local** automaticamente (ou providers cloud: Browser Use / Browserbase, via `.env`). Anexe a um navegador já aberto com `/browser connect`.
+
+### 🔀 n8n (workflows e automação)
+```powershell
+# instala o bridge MCP oficial (catálogo Nous)
+.\hermes-agent\venv\Scripts\hermes.exe mcp install n8n
+# ou, no setup: powershell -File .\setup.ps1 -WithN8nMCP
+```
+Gere uma **API key** no n8n (**Settings → API**), preencha `N8N_BASE_URL` e `N8N_API_KEY` no `.env`, e o agente ganha ferramentas para listar, inspecionar, exportar e executar workflows n8n.
+
+### 🧠 Esquema inteligente — visão de tela + contexto gigante
+- **Modelo principal:** Claude Opus 4.5 — raciocínio profundo, visão nativa e contexto enorme para **ler/editar muitos arquivos grandes**.
+- **Leitura de tela:** `auxiliary.vision` aponta para o **Gemini 3 Flash** (visão + contexto 1M) — usado por `browser_vision`, `vision_analyze` e análise de imagens.
+- **Contextos enormes:** limites de leitura elevados (`context_file_max_chars`/`file_read_max_chars` = 400k, saída de tools de até 150k) para o agente trabalhar com bases de código inteiras.
+
+### ⚡ Muito mais agentes gratuitos
+- **Chain de fallback rica** no `config.yaml`: troca automática entre OpenRouter (pago), **camada gratuita** (`:free` da OpenRouter) e **modelos locais** (Ollama).
+- **Ollama local (grátis, offline, ilimitado):** instale em [ollama.com](https://ollama.com), baixe modelos e o provider `ollama-local` (já no `config.yaml`) é usado automaticamente quando os serviços online falham:
+  ```bash
+  ollama pull qwen2.5-coder:32b
+  ollama pull llama3.3:70b
+  ```
+- Copilot / OpenCode Zen / GitHub Models também estão na cadeia.
+
+### ✅ Commits automáticos no branch
+Regra persistente no `SOUL.md` + skill **`git-commit-workflow`**: ao **final de cada tarefa**, o agente faz `git add` + `git commit` **no branch atual** com mensagem no padrão conventional commits (e **nunca** `push --force`). Push remoto só quando você pedir.
 
 ---
 

@@ -101,7 +101,7 @@ state/
 # ── Machine-specific / dados pessoais (nunca versionar) ──
 bin/
 *.lnk
-skills/
+/skills/
 venv/
 .venv/
 hermes_agent.egg-info/

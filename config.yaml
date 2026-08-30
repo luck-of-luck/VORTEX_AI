@@ -2,7 +2,19 @@
 # HERMES_HOME = raiz do repositório. Gerado a partir de hermes_cli/config_defaults.py.
 # Fallback: ao esgotar tokens (429/402/529/503/context_length) troca automaticamente
 
+# ── Modelo principal: potência máxima (visão nativa + contexto enorme) ──
+# Claude Opus 4.5: lê/edita grandes bases de código com contexto gigante e
+# análisa imagens/screenshots nativamente. Swap para um modelo de 1M de
+# contexto (google/gemini-3-flash) quando precisar de contexto máximo.
 model: openrouter/anthropic/claude-opus-4-5
+
+# ── Provedores locais (gratuitos) — Ollama / LM Studio no seu PC ──
+# Entradas locais só funcionam com o serviço rodando
+# (ex.: Ollama em http://127.0.0.1:11434). Baixe modelos como qwen2.5-coder.
+providers:
+  ollama-local:
+    base_url: "http://127.0.0.1:11434/v1"
+    api_mode: chat_completions
 
 fallback_model:
   - provider: openrouter
@@ -13,9 +25,20 @@ fallback_model:
     model: opencode/claude-haiku-4-5
   - provider: copilot
     model: gpt-4.1
+  # ── Camada gratuita (OpenRouter :free) ──
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
+  - provider: openrouter
+    model: qwen/qwen-2.5-72b-instruct:free
+  - provider: openrouter
+    model: nvidia/nemotron-nano-2-20b-instruct:free
+  # ── Camada local (PC) — Ollama ──
+  - provider: ollama-local
+    model: "qwen2.5-coder:32b"
+  - provider: ollama-local
+    model: "llama3.3:70b"
 
+# ── Fallback principal — mesma chain, na mesma ordem ──
 fallback_providers:
   - provider: openrouter
     model: anthropic/claude-sonnet-4-5
@@ -25,8 +48,18 @@ fallback_providers:
     model: opencode/claude-haiku-4-5
   - provider: copilot
     model: gpt-4.1
+  # ── Camada gratuita (OpenRouter :free) ──
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
+  - provider: openrouter
+    model: qwen/qwen-2.5-72b-instruct:free
+  - provider: openrouter
+    model: nvidia/nemotron-nano-2-20b-instruct:free
+  # ── Camada local (PC) — Ollama ──
+  - provider: ollama-local
+    model: "qwen2.5-coder:32b"
+  - provider: ollama-local
+    model: "llama3.3:70b"
 
 # ── Cérebro — nível máximo: raciocínio, memória, aprendizado ──
 # Raciocínio ultra, memória holográfica, curator agressivo, background review
@@ -240,14 +273,16 @@ compression:
   in_place: true
   codex_gpt55_autoraise: true
 
-# ── Limites de leitura — grandes arquivos ──
-context_file_max_chars: 100000
-file_read_max_chars: 100000
+# ── Limites de leitura — grandes arquivos / contextos enormes ──
+# Máximo para o "esquema inteligente": o modelo principal recebe bases de
+# código grandes e arquivos extensos sem truncar. (padrão: 100000)
+context_file_max_chars: 400000
+file_read_max_chars: 400000
 
 tool_output:
-  max_bytes: 50000
-  max_lines: 2000
-  max_line_length: 2000
+  max_bytes: 150000
+  max_lines: 4000
+  max_line_length: 4000
 
 tool_loop_guardrails:
   warnings_enabled: true
@@ -286,8 +321,10 @@ auxiliary:
     timeout: 30
     reasoning_effort: low
   vision:
-    provider: auto
-    model: ""
+    # IA que "enxerga": analisa screenshots, imagens e leitura de tela
+    # (browser_vision, vision_analyze). Gemini Flash = visão + contexto 1M.
+    provider: openrouter
+    model: "google/gemini-3-flash"
     timeout: 120
     reasoning_effort: high
   curator:
@@ -326,3 +363,42 @@ auxiliary:
     model: ""
     timeout: 180
     reasoning_effort: high
+
+# ═══════════════════════════════════════════════════════════════════════
+#  VORTEX AI — potência extra (navegador, n8n, visão de tela)
+# ═══════════════════════════════════════════════════════════════════════
+
+# ── Navegador automatizado ──
+# Tools nativas ativas: browser_navigate, browser_click, browser_type,
+# browser_snapshot, browser_vision (screenshot + análise de tela) e mais.
+#   backend: ""           → auto (Browser Use CLI se disponível; senão built-in)
+#            "browser-use"→ forçar Browser Use CLI (driver Python)
+#            "off"        → usar sempre as tools nativas (built-in)
+# Navegador local: Chrome/Edge/Chromium por padrão; `hermes browser connect`
+# para anexar a um navegador já aberto (CDP).
+browser:
+  backend: ""            # auto
+  headed: false          # headless (sem janela visível)
+  allow_private_urls: false
+  engine: auto           # chrome (padrão) | lightpanda (rápido, sem screenshots)
+  snapshot_threshold: 15000
+  record_sessions: false
+
+# ── n8n — orquestração de workflows via MCP ──
+# Instale o bridge oficial (catálogo Nous) — ele já configura mcp_servers:
+#   1) hermes mcp install n8n
+#   2) Gere uma API key no n8n (Settings → API) e salve em .env:
+#        N8N_BASE_URL=http://127.0.0.1:5678
+#        N8N_API_KEY=...
+#   3) Reinicie a sessão (ou /reload-mcp).
+# O install clona o servidor em ${HERMES_HOME}/mcp-installs/n8n e escreve a
+# entrada em mcp_servers automaticamente (veja `hermes mcp list`).
+# Se preferir configurar na mão, o formato é:
+# mcp_servers:
+#   n8n:
+#     command: "${HERMES_HOME}/mcp-installs/n8n/.venv/bin/python"
+#     args: ["${HERMES_HOME}/mcp-installs/n8n/server.py"]
+#     env:
+#       N8N_BASE_URL: "${N8N_BASE_URL}"
+#       N8N_API_KEY: "${N8N_API_KEY}"
+#     enabled: true
