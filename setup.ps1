@@ -156,5 +156,9 @@ Write-Host "  Dicas de potencia:" -ForegroundColor Cyan
 Write-Host "    * Navegador: pedir ao Hermes para navegar/scraping usa Chrome local." -ForegroundColor DarkGray
 Write-Host "    * Modelos locais gratis: instale Ollama (ollama.com) e baixe modelos." -ForegroundColor DarkGray
 Write-Host "      Ex.: ollama pull qwen2.5-coder:32b  (provider ollama-local ja configurado)" -ForegroundColor DarkGray
+Write-Host "    * LM Studio: abra o app -> aba Developer -> Start Server (porta 1234)." -ForegroundColor DarkGray
+Write-Host "      O provider lmstudio-local ja esta no config.yaml." -ForegroundColor DarkGray
+Write-Host "    * Outras IAs no fallback: Copilot (GH_TOKEN), Claude (ANTHROPIC_API_KEY)," -ForegroundColor DarkGray
+Write-Host "      Kimi (KIMI_API_KEY) e CLINE_API_KEY — veja .env.example." -ForegroundColor DarkGray
 Write-Host "    * n8n: se usou -WithN8nMCP, gere API key em n8n > Settings > API." -ForegroundColor DarkGray
 Write-Host ""
