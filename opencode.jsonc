@@ -1,0 +1,63 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/claude-opus-4-5",
+  "small_model": "opencode/claude-haiku-4-5",
+  "instructions": ["AGENTS.md"],
+  "references": {
+    "hermes-agent": {
+      "path": "./hermes-agent",
+      "description": "Hermes Agent source — use for core, gateway, skills, toolsets"
+    },
+    "hermes-config": {
+      "path": "./hermes-agent/AGENTS.md",
+      "description": "Hermes invariants: narrow waist, prompt caching"
+    }
+  },
+  "mcp": {
+    "hermes": {
+      "type": "local",
+      "command": ["bin/hermes.exe", "mcp", "serve"],
+      "enabled": true
+    }
+  },
+  "provider": {
+    "openrouter": {},
+    "github-copilot": {},
+    "cline": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Cline",
+      "options": {
+        "baseURL": "https://api.cline.bot/api/v1",
+        "apiKey": "{env:CLINE_API_KEY}"
+      },
+      "models": {
+        "anthropic/claude-sonnet-4-6": {
+          "name": "Claude Sonnet 4.6"
+        },
+        "openai/gpt-4o": {
+          "name": "GPT-4o"
+        },
+        "google/gemini-2.5-pro": {
+          "name": "Gemini 2.5 Pro"
+        },
+        "minimax/minimax-m2.5": {
+          "name": "MiniMax M2.5"
+        }
+      }
+    }
+  },
+  "formatter": true,
+  "lsp": true,
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "rm -rf /*": "deny",
+      "git push --force *": "deny",
+      "*": "ask"
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "tail_turns": 15
+  }
+}

@@ -1,0 +1,108 @@
+# ── Secrets & Credentials ──
+.env
+.env.*
+!/.env.example
+auth.json
+auth.lock
+hermes_config_vars.json
+
+# ── State, DBs & Cache ──
+state.db
+state.db-wal
+state.db-shm
+state.db.fts_rebuild.lock
+kanban.db
+kanban.db-wal
+kanban.db-shm
+kanban.db.dispatch.lock
+kanban.db.init.lock
+memory_store.db
+memory_store.db-wal
+memory_store.db-shm
+models_dev_cache.json
+models_dev_cache.etag
+models_dev_cache.db
+server.heapsnapshot
+tui.heapsnapshot
+gateway_state.json
+gateway.lock
+gateway.pid
+gateway-starts.log
+gateway-stdio.log
+gateway.log
+gateway-exit-diag.log
+channel_directory.json
+.scratch_tip_shown
+.skills_prompt_snapshot.json
+.update_check
+context_length_cache.yaml
+
+# ── Directories with user data / sessions / logs ──
+logs/
+sessions/
+memories/
+cache/
+audio_cache/
+image_cache/
+bootstrap-cache/
+pending_messages/
+sandboxes/
+pairing/
+cron/
+kanban/
+__pycache__/
+.ruff_cache/
+node_modules/
+
+# ── Generated / Build artifacts ──
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.whl
+*.tar.gz
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+*.log
+*.tmp
+*.bak
+
+# ── OS files ──
+.DS_Store
+desktop.ini
+
+# ── Test & coverage ──
+coverage/
+.nyc_output
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ── State directory (runtime state files) ──
+state/
+
+# ── Lock files in subdirectories ──
+# *.lock
+
+# ── Heap snapshots ──
+# *.heapsnapshot
+
+# ── PDF and large binary artifacts in skills ──
+# *.pdf
+
+# ── Skip .github instructions (keep repo clean) ──
+.github/instructions/codacy.instructions.md
+
+# ── Machine-specific / dados pessoais (nunca versionar) ──
+bin/
+*.lnk
+skills/
+venv/
+.venv/
+hermes_agent.egg-info/
+*.heapsnapshot

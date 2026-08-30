@@ -1,0 +1,328 @@
+# Hermes config — 24/7 grandes sistemas | UX + Segurança + Fallback inteligente
+# HERMES_HOME = raiz do repositório. Gerado a partir de hermes_cli/config_defaults.py.
+# Fallback: ao esgotar tokens (429/402/529/503/context_length) troca automaticamente
+
+model: openrouter/anthropic/claude-opus-4-5
+
+fallback_model:
+  - provider: openrouter
+    model: anthropic/claude-sonnet-4-5
+  - provider: openrouter
+    model: google/gemini-3-flash
+  - provider: opencode-zen
+    model: opencode/claude-haiku-4-5
+  - provider: copilot
+    model: gpt-4.1
+  - provider: openrouter
+    model: meta-llama/llama-3.3-70b-instruct:free
+
+fallback_providers:
+  - provider: openrouter
+    model: anthropic/claude-sonnet-4-5
+  - provider: openrouter
+    model: google/gemini-3-flash
+  - provider: opencode-zen
+    model: opencode/claude-haiku-4-5
+  - provider: copilot
+    model: gpt-4.1
+  - provider: openrouter
+    model: meta-llama/llama-3.3-70b-instruct:free
+
+# ── Cérebro — nível máximo: raciocínio, memória, aprendizado ──
+# Raciocínio ultra, memória holográfica, curator agressivo, background review
+memory:
+  provider: holographic
+  memory_enabled: true
+  user_profile_enabled: true
+  write_approval: false
+  memory_char_limit: 5000
+  user_char_limit: 3000
+  nudge_interval: 5
+
+curator:
+  enabled: true
+  interval_hours: 24
+  min_idle_hours: 1
+  stale_after_days: 14
+  archive_after_days: 30
+  consolidate: true
+  prune_builtins: true
+  archive_ttl_days: 0
+  backup:
+    enabled: true
+    keep: 10
+
+# ── Agente — resiliência para dia/noite + cérebro máximo ──
+agent:
+  api_max_retries: 2
+  gateway_timeout: 1800
+  gateway_timeout_warning: 900
+  gateway_notify_interval: 120
+  session_stall_timeout: 300
+  clarify_timeout: 3600
+  build_wait_timeout: 600
+  service_tier: ""
+  reasoning_effort: ultra
+  reasoning_overrides:
+    "claude-sonnet": ultra
+    "claude-opus": ultra
+    "gemini": max
+    "gpt-5": ultra
+  reasoning_echo: false
+  tool_use_enforcement: true
+  execution_guidance: true
+  intent_ack_continuation: true
+  stall_guards: true
+  task_completion_guidance: true
+  parallel_tool_call_guidance: true
+  environment_probe: true
+  coding_context: auto
+  verify_on_stop: false
+  verify_guidance: true
+
+# ── Segurança — camadas ──
+security:
+  redact_secrets: true
+  redact_pii: false
+  allow_private_urls: false
+  tirith_enabled: true
+  tirith_timeout: 5
+  tirith_fail_open: true
+  protected_instruction_files: true
+  allow_lazy_installs: false
+  approvals:
+    mode: smart
+    timeout: 300
+
+# Aprovações — evita comandos destrutivos sem confirmação
+approvals:
+  mode: smart
+  timeout: 300
+  cron_mode: deny
+  single_query_mode: deny
+  destructive_slash_confirm: true
+  mcp_reload_confirm: true
+  denial_breaker_threshold: 3
+  deny:
+    - "rm -rf /*"
+    - "rm -rf ~/*"
+    - "git push --force *"
+    - "git push -f *"
+    - "format c:*"
+    - "mkfs*"
+    - "dd if=* of=/dev/*"
+    - "shutdown *"
+    - "reboot *"
+
+# ── Display / UX — longa duração ──
+display:
+  compact: false
+  interface: tui
+  resume_display: full
+  resume_exchanges: 10
+  busy_input_mode: interrupt
+  cli_multiline_shortcuts: true
+  tui_auto_resume_recent: true
+  tui_agents_nudge: true
+  show_reasoning: true
+  reasoning_full: false
+  memory_notifications: on
+  background_process_notifications: concise
+  streaming: true
+  timestamps: true
+  timestamp_format: "%H:%M"
+  final_response_markdown: strip
+  inline_diffs: true
+  file_mutation_verifier: true
+  turn_summary: true
+  spinner_token_flow: true
+  friendly_tool_labels: true
+  tool_progress: true
+  tool_preview_length: 0
+  tool_progress_grouping: accumulate
+  skin: default
+  language: en
+  tui_status_indicator: kaomoji
+  cli_refresh_interval: 1.0
+  show_cost: false
+  battery: false
+
+# ── Checkpoints — edição de grandes sistemas com rollback ──
+checkpoints:
+  enabled: true
+  max_snapshots: 20
+  max_total_size_mb: 500
+  max_file_size_mb: 10
+  auto_prune: true
+  retention_days: 7
+  min_interval_hours: 24
+
+# ── Terminal — isolamento e persistência ──
+terminal:
+  backend: local
+  timeout: 180
+  persistent_shell: true
+  degraded_mode: warn
+  docker_image: nikolaik/python-nodejs:python3.11-nodejs20
+  container_memory: 5120
+  container_disk: 51200
+  container_persistent: true
+  docker_network: true
+  docker_shm_size: 1g
+  env_passthrough: []
+  home_mode: auto
+  auto_source_bashrc: true
+
+# ── Gateway — operação contínua ──
+gateway:
+  platform_connect_timeout: 30
+  loop_watchdog: true
+  delivery_ledger: true
+  write_sessions_json: true
+  max_inbound_media_bytes: 134217728
+  strict: false
+  trust_recent_files: true
+  trust_recent_files_seconds: 600
+  scale_to_zero:
+    idle_timeout_minutes: 2
+  restart_loop_guard:
+    max_restarts: 3
+    window: 60
+    max_gap: 300
+  respawn_storm:
+    max: 5
+    window: 120
+
+# ── Cron — jobs agendados ──
+cron:
+  allow_agent_scheduling: false
+  preflight: true
+  model_drift_guard: true
+  wrap_response: true
+  mirror_delivery: false
+  max_parallel_jobs: 3
+  script_timeout_seconds: 3600
+  media_send_timeout: 300
+
+# ── Kanban — edição paralela de grandes sistemas ──
+kanban:
+  dispatch_in_gateway: true
+  review_dispatch: true
+  dispatch_interval_seconds: 60
+  dispatch_stale_timeout_seconds: 14400
+  failure_limit: 2
+  max_in_progress: 4
+  max_in_progress_per_profile: 2
+  auto_decompose: true
+  auto_decompose_per_tick: 3
+  reconcile_orphans: true
+  done_sub_retention_days: 30
+  auto_subscribe_on_create: true
+
+# ── Delegação — cérebro máximo: subagentes ultra, orquestrador, 4 paralelos ──
+delegation:
+  max_concurrent_children: 6
+  max_spawn_depth: 3
+  child_timeout_seconds: 900
+  orchestrator_enabled: true
+  subagent_auto_approve: false
+  inherit_mcp_toolsets: true
+  max_iterations: 500
+  reasoning_effort: ultra
+
+# ── Compressão — janelas grandes ──
+compression:
+  enabled: true
+  threshold: 0.50
+  target_ratio: 0.20
+  protect_last_n: 20
+  protect_first_n: 3
+  in_place: true
+  codex_gpt55_autoraise: true
+
+# ── Limites de leitura — grandes arquivos ──
+context_file_max_chars: 100000
+file_read_max_chars: 100000
+
+tool_output:
+  max_bytes: 50000
+  max_lines: 2000
+  max_line_length: 2000
+
+tool_loop_guardrails:
+  warnings_enabled: true
+  hard_stop_enabled: false
+  loop_caps:
+    max_web_searches: 50
+    max_subagents: 50
+
+# ── Prompt caching & OpenRouter cache ──
+prompt_caching:
+  cache_ttl: 5m
+
+openrouter:
+  response_cache: true
+  response_cache_ttl: 300
+
+# ── Sync fluido — um segredo, um lugar ──
+sync:
+  opencode_env: true
+
+# ── Auxiliares — cérebro máximo: reasoning alto, visão e compressão com modelo forte ──
+auxiliary:
+  free_only: false
+  transient_retries: 3
+  openrouter_model: ""
+  compression:
+    provider: auto
+    model: ""
+    timeout: 180
+    reasoning_effort: high
+  title_generation:
+    enabled: true
+    provider: auto
+    model: ""
+    prefer_fast_model: false
+    timeout: 30
+    reasoning_effort: low
+  vision:
+    provider: auto
+    model: ""
+    timeout: 120
+    reasoning_effort: high
+  curator:
+    provider: auto
+    model: ""
+    timeout: 600
+    reasoning_effort: high
+  background_review:
+    enabled: true
+    provider: auto
+    model: ""
+    timeout: 180
+    reasoning_effort: high
+    max_input_tokens: 800000
+  approval:
+    provider: auto
+    model: ""
+    timeout: 30
+    reasoning_effort: medium
+  review:
+    provider: auto
+    model: ""
+    timeout: 300
+  monitor:
+    provider: auto
+    model: ""
+    timeout: 60
+    reasoning_effort: medium
+  triage_specifier:
+    provider: auto
+    model: ""
+    timeout: 120
+    reasoning_effort: high
+  kanban_decomposer:
+    provider: auto
+    model: ""
+    timeout: 180
+    reasoning_effort: high
