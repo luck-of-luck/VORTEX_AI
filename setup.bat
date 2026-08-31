@@ -18,6 +18,15 @@ if %errorlevel% equ 0 (
     where powershell >nul 2>nul
     if %errorlevel% equ 0 (
         set "PS_EXE=powershell"
+    ) else (
+        REM fallback: tenta chamar diretamente (where pode falhar em alguns shells)
+        pwsh -NoProfile -Command "exit 0" >nul 2>nul
+        if %errorlevel% equ 0 (
+            set "PS_EXE=pwsh"
+        ) else (
+            powershell -NoProfile -Command "exit 0" >nul 2>nul
+            if %errorlevel% equ 0 set "PS_EXE=powershell"
+        )
     )
 )
 
@@ -33,8 +42,19 @@ echo [INFO] Usando: %PS_EXE%
 echo [INFO] Executando setup.ps1 ...
 echo.
 
-REM -- Forward todos os argumentos para setup.ps1 (ex: setup.bat -Extras "messaging,mcp" -WithN8nMCP)
-"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1" %*
+REM -- Normaliza --verify para -VerifyOnly (usuario pode usar setup.bat --verify)
+set "SETUP_ARGS=%*"
+if not "%SETUP_ARGS%"=="" (
+    set "SETUP_ARGS=!SETUP_ARGS:--verify=-VerifyOnly!"
+    set "SETUP_ARGS=!SETUP_ARGS:--Verify=-VerifyOnly!"
+    set "SETUP_ARGS=!SETUP_ARGS:verify=-VerifyOnly!"
+)
+REM -- Forward todos os argumentos para setup.ps1 (ex: setup.bat -Extras "messaging,mcp" -WithN8nMCP -VerifyOnly)
+if defined SETUP_ARGS (
+    "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1" !SETUP_ARGS!
+) else (
+    "%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
+)
 
 set "EXITCODE=%errorlevel%"
 echo.

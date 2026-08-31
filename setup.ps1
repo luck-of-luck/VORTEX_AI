@@ -21,7 +21,8 @@ param(
     [string]$Extras = "messaging,mcp",
     [switch]$WithN8nMCP,
     [switch]$NonInteractive,
-    [switch]$SkipNodeCheck
+    [switch]$SkipNodeCheck,
+    [switch]$VerifyOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -80,9 +81,12 @@ Write-Host "  Modo: $(if($interactive){'interativo'}else{'nao-interativo'})" -Fo
 Write-Host ""
 
 # ------------------------------------------------------------- [1] Python
-Write-Step "[1/6] Verificando Python (3.11 - 3.13)..."
+Write-Step "[1/6] Verificando Python (3.11 - 3.13)...$(if($VerifyOnly){" [VERIFY]"})"
 $pyInfo = $null
-if (-not $SkipPythonCheck) {
+if ($VerifyOnly) {
+    $pyInfo = Get-ValidPython
+    if ($pyInfo) { Write-Ok "Python $($pyInfo.version) OK via '$($pyInfo.cmd)'" } else { Write-Warn "Python nao encontrado (modo verify)" }
+} elseif (-not $SkipPythonCheck) {
     $pyInfo = Get-ValidPython
     if ($pyInfo) {
         Write-Ok "Python $($pyInfo.version) OK via '$($pyInfo.cmd)' ($($pyInfo.path))"
@@ -131,15 +135,19 @@ if (-not $SkipPythonCheck) {
     Write-Info "SkipPythonCheck ativo - pulando verificacao."
     Write-Ok "Python check ignorado."
 }
-if ($pyInfo) { Write-Ok "Python OK." } elseif ($SkipPythonCheck) { Write-Ok "Python check pulado." }
+if ($VerifyOnly) { }
+elseif ($pyInfo) { Write-Ok "Python OK." } elseif ($SkipPythonCheck) { Write-Ok "Python check pulado." }
 
 # ---------------------------------------------------------------- [2] uv
-Write-Step "[2/6] Verificando uv (gerenciador Astral)..."
+Write-Step "[2/6] Verificando uv (gerenciador Astral)...$(if($VerifyOnly){" [VERIFY]"})"
 $uvCmd = Get-Command uv -ErrorAction SilentlyContinue
 $uvPath = $null
 if ($uvCmd) { $uvPath = $uvCmd.Source; Write-Info "uv encontrado em $uvPath" }
 
-if (-not $uvCmd) {
+if ($VerifyOnly -and -not $uvCmd) {
+    $binUv = Join-Path $root "bin\uv.exe"
+    if (Test-Path $binUv) { $uvCmd = $binUv; $uvPath = $binUv; Write-Info "uv via bin\uv.exe (verify)" }
+} elseif (-not $uvCmd) {
     Write-Warn "uv nao encontrado, instalando via astral.sh ..."
     try {
         # Tenta instalacao oficial
@@ -194,6 +202,9 @@ try {
 }
 
 # ------------------------------------------- [3] Sincronizar dependencias
+if ($VerifyOnly) {
+    Write-Step "[3/6] Sincronizando dependencias (pulando em modo verify)..." 
+} else {
 Write-Step "[3/6] Sincronizando dependencias (uv sync) - pode levar alguns minutos na 1a vez..."
 $env:UV_PROJECT_ENVIRONMENT = Join-Path $agent "venv"
 if (-not (Test-Path $agent)) {
@@ -228,8 +239,18 @@ try {
 finally {
     Pop-Location
 }
+} # fecha else VerifyOnly
 
 # ------------------------------------------------- [4] Gerar bin executaveis
+if ($VerifyOnly) {
+    Write-Step "[4/6] Verificando bin\ ... [VERIFY]"
+    $binDir = Join-Path $root "bin"
+    foreach ($name in @("hermes.exe", "hermes-agent.exe", "hermes-acp.exe")) {
+        $p = Join-Path $binDir $name
+        $p2 = Join-Path $agent "venv\Scripts\$name"
+        if ((Test-Path $p) -or (Test-Path $p2)) { Write-Ok "$name OK" } else { Write-Warn "$name faltando" }
+    }
+} else {
 Write-Step "[4/6] Gerando executaveis em bin\ ..."
 $binDir = Join-Path $root "bin"
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
@@ -254,12 +275,16 @@ if ($copied -eq 0) {
 } else {
     Write-Ok "Executaveis prontos."
 }
+}
 
 # ----------------------------------------------------------- [5] .env
-Write-Step "[5/6] Preparando .env ..."
+Write-Step "[5/6] Preparando .env ...$(if($VerifyOnly){" [VERIFY]"})"
 $envPath = Join-Path $root ".env"
 $envExample = Join-Path $root ".env.example"
-if (-not (Test-Path $envPath)) {
+if ($VerifyOnly) {
+    if (-not (Test-Path $envPath)) { Write-Warn ".env nao encontrado (modo verify) - sera criado no setup normal" }
+    else { Write-Info ".env existe (verify) - checando chaves..." }
+} elseif (-not (Test-Path $envPath)) {
     if (Test-Path $envExample) {
         Copy-Item $envExample $envPath
         Write-Ok ".env criado a partir de .env.example"
@@ -305,13 +330,15 @@ if (Test-Path $envPath) {
         Write-Host "        * OPENROUTER_API_KEY -> https://openrouter.ai/keys (modelos :free)" -ForegroundColor White
         Write-Host "        * ANTHROPIC_API_KEY  -> https://console.anthropic.com/" -ForegroundColor White
         Write-Host "        * Ollama local       -> https://ollama.com (100% offline, veja passo 6)" -ForegroundColor White
-        if ($interactive) {
+        if ($interactive -and -not $VerifyOnly) {
             Write-Host ""
             $open = Read-Host "      Deseja abrir o .env agora para editar? (S/n)"
             if ($open -notin @("n","N","nao","no")) {
                 try { notepad.exe $envPath } catch { Write-Info "Abra manualmente: $envPath" }
                 Write-Host "      Dica: preencha CLINE_API_KEY ou OPENROUTER_API_KEY e salve. Depois rode Abrir-Hermes.bat" -ForegroundColor DarkGray
             }
+        } elseif ($VerifyOnly) {
+            Write-Info "Modo verify: nao abrindo editor. Edite manualmente: $envPath"
         } else {
             Write-Info "Edite manualmente: $envPath  (veja .env.example para exemplos)"
         }
@@ -320,11 +347,12 @@ if (Test-Path $envPath) {
 
 # ------------------------------------------------- [6] Node / OpenCode / Ollama (opcional mas recomendado)
 Write-Step "[6/6] Verificando ferramentas opcionais (Node, OpenCode, Ollama)..."
-# Node
+$nodeOk = $false; $npmOk = $false; $opencodeOk = $false; $ollamaOk = $false
 if (-not $SkipNodeCheck) {
     $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
     $npmCmd  = Get-Command npm -ErrorAction SilentlyContinue
     if ($nodeCmd -and $npmCmd) {
+        $nodeOk = $true; $npmOk = $true
         try {
             $nodeVer = & node --version 2>$null
             $npmVer  = & npm --version 2>$null
@@ -332,16 +360,17 @@ if (-not $SkipNodeCheck) {
         } catch { Write-Ok "Node/npm encontrados" }
         $opencodeCmd = Get-Command opencode -ErrorAction SilentlyContinue
         if ($opencodeCmd) {
+            $opencodeOk = $true
             try { $ocVer = & opencode --version 2>$null; Write-Ok "opencode $ocVer" } catch { Write-Ok "opencode encontrado" }
         } else {
-            Write-Warn "opencode nao encontrado (opcional)."
+            Write-Warn "opencode nao encontrado (opcional, mas recomendado)."
             Write-Info "Instale com: npm install -g opencode-ai   (depois use Abrir-OpenCode.bat)"
-            if ($interactive) {
+            if ($interactive -and -not $VerifyOnly) {
                 $doInstall = Read-Host "      Instalar opencode agora via npm? (s/N)"
                 if ($doInstall -in @("s","S","y","Y","sim","yes")) {
                     try {
                         & npm install -g opencode-ai
-                        if ($LASTEXITCODE -eq 0) { Write-Ok "opencode instalado!" } else { Write-Warn "npm falhou (codigo $LASTEXITCODE). Tente manualmente." }
+                        if ($LASTEXITCODE -eq 0) { $opencodeOk = $true; Write-Ok "opencode instalado!" } else { Write-Warn "npm falhou (codigo $LASTEXITCODE). Tente manualmente: npm install -g opencode-ai" }
                     } catch { Write-Warn "Falha: $($_.Exception.Message)" }
                 }
             }
@@ -349,49 +378,95 @@ if (-not $SkipNodeCheck) {
     } else {
         Write-Warn "Node.js/npm nao encontrados (opcional, so para OpenCode)."
         Write-Info "Baixe em https://nodejs.org/ se quiser usar Abrir-OpenCode.bat"
+        if ($interactive -and -not $VerifyOnly) {
+            $winget = Get-Command winget -ErrorAction SilentlyContinue
+            if ($winget) {
+                $doNode = Read-Host "      Instalar Node.js LTS via winget agora? (s/N) [requer permissao]"
+                if ($doNode -in @("s","S","y","Y","sim","yes")) {
+                    try {
+                        Write-Warn "Instalando Node.js LTS via winget..."
+                        winget install -e --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements --silent | Out-Null
+                        $env:Path = "$env:ProgramFiles\nodejs;$env:Path"
+                        Start-Sleep -Seconds 2
+                        $nodeCmd2 = Get-Command node -ErrorAction SilentlyContinue
+                        if ($nodeCmd2) {
+                            $nodeOk = $true; $npmOk = $true
+                            Write-Ok "Node instalado! Reinicie o terminal se 'node --version' ainda falhar."
+                            # tenta opencode em seguida
+                            $doOC2 = Read-Host "      Instalar opencode agora? (s/N)"
+                            if ($doOC2 -in @("s","S","y","Y")) {
+                                & npm install -g opencode-ai
+                                if ($LASTEXITCODE -eq 0) { $opencodeOk = $true; Write-Ok "opencode instalado!" }
+                            }
+                        } else { Write-Warn "winget rodou mas node ainda nao no PATH. Feche e reabra o terminal e rode setup.bat de novo." }
+                    } catch { Write-Warn "winget falhou: $($_.Exception.Message) -> instale manualmente em https://nodejs.org/" }
+                }
+            } else {
+                Write-Info "Sem winget. Baixe manualmente: https://nodejs.org/ (LTS, marque Add to PATH)"
+            }
+        }
     }
 } else {
     Write-Info "SkipNodeCheck ativo."
+    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+    if ($nodeCmd) { $nodeOk = $true }
 }
 
-# Ollama (100% gratis/offline)
+# Ollama (100% gratis/offline) + LM Studio
 $ollamaCmd = Get-Command ollama -ErrorAction SilentlyContinue
 if ($ollamaCmd) {
+    $ollamaOk = $true
     Write-Ok "Ollama encontrado ($($ollamaCmd.Source))"
     try {
         $models = & ollama list 2>$null | Out-String
-        if ($models -match "qwen|llama|deepseek|phi|gemma|mistral" ) {
+        if ($models -match "qwen|llama|deepseek|phi|gemma|mistral|nomic" ) {
             Write-Ok "Modelos Ollama ja instalados:"
-            $models -split "`n" | Select-Object -First 5 | ForEach-Object { Write-Info "  $_" }
+            $models -split "`n" | Select-Object -First 5 | ForEach-Object { if ($_.Trim()) { Write-Info "  $_".TrimEnd() } }
         } else {
             Write-Warn "Ollama instalado mas nenhum modelo encontrado."
             Write-Info "Baixe um modelo gratis: ollama pull qwen2.5-coder:32b  (ou: ollama pull qwen2.5:14b para PCs modestos)"
-            if ($interactive -and -not $hasKey) {
+            if ($interactive -and -not $VerifyOnly -and -not $hasKey) {
                 Write-Host "      Sem chave API, Ollama e sua melhor opcao 100% gratis/offline." -ForegroundColor Yellow
-                $pull = Read-Host "      Baixar qwen2.5-coder:14b agora? (s/N) [pode demorar]"
+                $pull = Read-Host "      Baixar qwen2.5-coder:14b agora? (s/N) [pode levar minutos, ~8GB]"
                 if ($pull -in @("s","S","y","Y")) {
-                    Write-Warn "Baixando (isso pode levar minutos)..."
+                    Write-Warn "Baixando qwen2.5-coder:14b (aguarde)..."
                     & ollama pull qwen2.5-coder:14b
                     if ($LASTEXITCODE -eq 0) { Write-Ok "Modelo pronto! Ja da para usar sem chave API." }
+                    else { Write-Warn "Falha no pull. Tente: ollama pull qwen2.5:14b" }
                 }
             }
         }
-        # testa se servidor esta rodando
         try {
-            $resp = Invoke-WebRequest -Uri http://127.0.0.1:11434/api/tags -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
-            if ($resp.StatusCode -eq 200) { Write-Ok "Ollama servidor rodando (http://127.0.0.1:11434)" }
+            $resp = Invoke-WebRequest -Uri http://127.0.0.1:11434/api/tags -TimeoutSec 3 -UseBasicParsing -ErrorAction SilentlyContinue
+            if ($resp -and $resp.StatusCode -eq 200) { Write-Ok "Ollama servidor rodando (http://127.0.0.1:11434)" }
             else { Write-Warn "Ollama instalado mas servidor nao responde. Rode: ollama serve" }
-        } catch { Write-Info "Ollama servidor nao detectado - inicie com: ollama serve" }
+        } catch { Write-Info "Ollama servidor nao detectado - inicie com: ollama serve (ou reinicie o PC)" }
     } catch {}
 } else {
-    if (-not $hasKey) {
-        Write-Warn "Ollama nao encontrado - recomendado para uso 100% gratis/offline."
-        Write-Info "Instale em https://ollama.com/  depois: ollama pull qwen2.5-coder:32b"
+        if (-not $hasKey) {
+        Write-Warn "Ollama nao encontrado - recomendado para uso 100% gratis/offline (sem chave)."
+        Write-Info "Instale em https://ollama.com/  depois: ollama pull qwen2.5-coder:32b  e  ollama serve"
+        if ($interactive -and -not $VerifyOnly) {
+            $winget2 = Get-Command winget -ErrorAction SilentlyContinue
+            if ($winget2) {
+                $doOll = Read-Host "      Instalar Ollama via winget agora? (s/N)"
+                if ($doOll -in @("s","S","y","Y")) {
+                    try {
+                        winget install -e --id Ollama.Ollama --accept-source-agreements --accept-package-agreements --silent | Out-Null
+                        Write-Ok "Ollama instalado! Feche e reabra o terminal, depois: ollama pull qwen2.5-coder:32b"
+                        $ollamaOk = $true
+                    } catch { Write-Warn "winget falhou: $($_.Exception.Message) -> https://ollama.com/" }
+                }
+            }
+        }
     } else {
         Write-Info "Ollama nao encontrado (opcional, fallback local). https://ollama.com/"
     }
-    Write-Info "LM Studio alternativo (app desktop): https://lmstudio.ai/ -> Start Server em :1234"
+    Write-Info "LM Studio alternativo (app desktop): https://lmstudio.ai/ -> Start Server em :1234 (provider lmstudio-local)"
 }
+# Git check (para verificacao final)
+$gitCmd = Get-Command git -ErrorAction SilentlyContinue
+$gitOk = $null -ne $gitCmd
 
 # ------------------------------------------------------- [extra] n8n MCP (opcional)
 if ($WithN8nMCP) {
@@ -412,43 +487,95 @@ if ($WithN8nMCP) {
     }
 }
 
-# ------------------------------------------------------------ Validacao final
-Write-Step "[validacao] Testando instalacao..."
+# ------------------------------------------------------------ Validacao final - VERIFICACAO COMPLETA para quem nao tem nada
+Write-Step "[verificacao] Verificando instalacao completa (para quem nao tinha nada)..."
 $hermTest = Join-Path $agent "venv\Scripts\hermes.exe"
 if (-not (Test-Path $hermTest)) { $hermTest = Join-Path $root "bin\hermes.exe" }
+$hermVerOut = ""; $hermOk = $false
 if (Test-Path $hermTest) {
     try {
         $verOut = & $hermTest --version 2>&1 | Out-String
         $verOut = $verOut.Trim()
-        if ($verOut) { Write-Ok "hermes --version: $verOut" }
+        if ($verOut) { $hermVerOut = $verOut; $hermOk = $true; Write-Ok "hermes --version: $verOut" }
         else { Write-Warn "hermes executou mas sem saida de versao" }
-    } catch {
-        Write-Warn "Falha ao testar hermes --version: $($_.Exception.Message)"
-    }
-} else {
-    Write-Warn "hermes.exe nao encontrado para validacao."
+    } catch { Write-Warn "Falha ao testar hermes --version: $($_.Exception.Message)" }
+} else { Write-Warn "hermes.exe nao encontrado para validacao." }
+
+# Coleta status para tabela final
+$checks = @()
+function Add-Check($nome, $ok, $detalhe) {
+    $icon = if ($ok) { "[OK]" } else { "[!!]" }
+    $color = if ($ok) { "Green" } else { "Red" }
+    $checks += @{ nome=$nome; ok=$ok; detalhe=$detalhe; icon=$icon; color=$color }
+    return @{ nome=$nome; ok=$ok; detalhe=$detalhe; icon=$icon; color=$color }
+}
+$null = $checks  # init
+$checks = @()
+$pyOkFinal = $null -ne $pyInfo -or $SkipPythonCheck
+$checks += @{ nome="Python 3.11-3.13"; ok=$pyOkFinal; detalhe=if($pyInfo){"$($pyInfo.version) via $($pyInfo.cmd)"}else{if($SkipPythonCheck){"ignorado"}else{"faltando"}} }
+$checks += @{ nome="uv (Astral)"; ok=($null -ne $uvCmd); detalhe=if($uvCmd){try{& uv --version 2>$null}catch{$uvPath}}else{"faltando"} }
+$checks += @{ nome="hermes-agent venv"; ok=$hermOk; detalhe=if($hermOk){$hermVerOut}else{"falhou - rode setup.bat de novo"} }
+$checks += @{ nome=".env"; ok=(Test-Path $envPath); detalhe=if(Test-Path $envPath){if($hasKey){"chave: $($keyStatus.Keys -join ', ')"}else{"sem chave (precisa 1)"}}else{"faltando"} }
+$checks += @{ nome="Chave API ou Ollama"; ok=($hasKey -or $ollamaOk); detalhe=if($hasKey){"chave OK ($($keyStatus.Keys -join ','))"}elseif($ollamaOk){"Ollama local OK"}else{"FALTA: adicione CLINE_API_KEY/OPENROUTER_API_KEY ou instale Ollama"} }
+$checks += @{ nome="Node.js + npm"; ok=$nodeOk; detalhe=if($nodeOk){try{& node --version 2>$null}catch{"ok"}}else{"opcional - para OpenCode (https://nodejs.org/)"} }
+$checks += @{ nome="opencode"; ok=$opencodeOk; detalhe=if($opencodeOk){try{& opencode --version 2>$null}catch{"ok"}}else{if($nodeOk){"nao instalado: npm install -g opencode-ai"}else{"precisa Node primeiro"}} }
+$checks += @{ nome="Ollama local"; ok=$ollamaOk; detalhe=if($ollamaOk){"instalado (fallback 100% offline)"}else{"opcional - https://ollama.com/"} }
+$checks += @{ nome="Git"; ok=$gitOk; detalhe=if($gitOk){try{& git --version 2>$null}catch{"ok"}}else{"recomendado para clone/commit"} }
+$checks += @{ nome="config.yaml"; ok=(Test-Path (Join-Path $root "config.yaml")); detalhe="fallback inteligente configurado" }
+
+Write-Host ""
+Write-Host "  ----------------------------------------------------------" -ForegroundColor Cyan
+Write-Host "   VERIFICACAO FINAL - VORTEX_AI" -ForegroundColor Cyan
+Write-Host "  ----------------------------------------------------------" -ForegroundColor Cyan
+$okCount = 0
+foreach ($c in $checks) {
+    $icon = if ($c.ok) { "[OK]" } else { "[!!]" }
+    $col = if ($c.ok) { "Green" } else { if ($c.nome -match "Node|opencode|Ollama|Git") { "DarkGray" } else { "Red" } }
+    if ($c.ok) { $okCount++ }
+    Write-Host ("   {0} {1,-22} : {2}" -f $icon, $c.nome, $c.detalhe) -ForegroundColor $col
+}
+Write-Host "  ----------------------------------------------------------" -ForegroundColor Cyan
+Write-Host "   Resultado: $okCount/$($checks.Count) verificacoes OK" -ForegroundColor $(if($okCount -ge 5){"Green"}else{"Yellow"})
+if (-not $hasKey -and -not $ollamaOk) {
+    Write-Host ""
+    Write-Host "   [AVISO] ACAO NECESSARIA: sem chave API e sem Ollama, o agente NAO vai responder." -ForegroundColor Yellow
+    Write-Host "      Escolha UMA:" -ForegroundColor Yellow
+    Write-Host "        1) Grátis (Cline): https://app.cline.bot -> Settings > API Keys -> cole em .env CLINE_API_KEY" -ForegroundColor White
+    Write-Host "        2) Grátis (OpenRouter): https://openrouter.ai/keys -> cole em .env OPENROUTER_API_KEY" -ForegroundColor White
+    Write-Host "        3) 100% offline: https://ollama.com -> instale -> ollama pull qwen2.5-coder:32b -> ollama serve" -ForegroundColor White
+    Write-Host "      Depois: Abrir-Hermes.bat" -ForegroundColor White
+} elseif ($hasKey -or $ollamaOk) {
+    Write-Host "   [OK] Pronto para usar! Chave/Ollama ok." -ForegroundColor Green
+}
+Write-Host ""
+
+if ($VerifyOnly) {
+    Write-Host "  Modo --VerifyOnly: apenas verificacao, sem reinstalar." -ForegroundColor DarkGray
+    exit 0
 }
 
 # ------------------------------------------------------------ Concluido
-Write-Host ""
 Write-Host "  ==========================================================" -ForegroundColor Green
 Write-Host "   Concluido! VORTEX_AI pronto." -ForegroundColor Green
 Write-Host "  ==========================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Como usar agora:" -ForegroundColor White
-Write-Host "    * Duplo-clique em Abrir-Hermes.bat         -> CLI" -ForegroundColor White
+Write-Host "  Como usar agora (1 clique):" -ForegroundColor White
+Write-Host "    * Duplo-clique em Abrir-Hermes.bat         -> CLI (chat)" -ForegroundColor White
 Write-Host "    * Duplo-clique em Abrir-Hermes-TUI.bat     -> TUI (interface completa)" -ForegroundColor White
-Write-Host "    * Duplo-clique em Iniciar.ps1 (ou pwsh)   -> menu interativo" -ForegroundColor White
-Write-Host "    * Terminal: hermes-agent\venv\Scripts\hermes.exe" -ForegroundColor Gray
+Write-Host "    * Duplo-clique em Iniciar.ps1              -> menu interativo (8 opcoes)" -ForegroundColor White
+Write-Host "    * Terminal: hermes-agent\venv\Scripts\hermes.exe --tui" -ForegroundColor Gray
 Write-Host ""
-if (-not $hasKey) {
-    Write-Host "  ATENCAO: Configure sua chave antes de usar:" -ForegroundColor Yellow
-    Write-Host "    1) Abra .env (bloco de notas)" -ForegroundColor Yellow
-    Write-Host "    2) Preencha CLINE_API_KEY (https://app.cline.bot) OU OPENROUTER_API_KEY" -ForegroundColor Yellow
-    Write-Host "    3) Salve e rode Abrir-Hermes.bat" -ForegroundColor Yellow
-    Write-Host "    Alternativa 100% gratis/offline: instale Ollama + ollama pull qwen2.5-coder:32b" -ForegroundColor DarkGray
+if (-not $hasKey -and -not $ollamaOk) {
+    Write-Host "  ATENCAO: Configure sua chave antes de usar (veja verificacao acima)." -ForegroundColor Yellow
     Write-Host ""
 }
+Write-Host "  Para quem nao tinha NADA instalado, o setup ja instalou/verificou:" -ForegroundColor Cyan
+Write-Host "    * Python 3.12 + uv + hermes-agent (obrigatorio) -> OK se 3 primeiros [OK]" -ForegroundColor DarkGray
+Write-Host "    * Node/opencode (opcional, para editor IA) -> se [!!] instale Node e rode setup.bat de novo" -ForegroundColor DarkGray
+Write-Host "    * Ollama/LM Studio (opcional, 100% offline) -> se [!!] e sem chave, instale para usar sem internet" -ForegroundColor DarkGray
+Write-Host "  Re-verificar a qualquer hora:" -ForegroundColor DarkGray
+Write-Host "    powershell -File setup.ps1 -VerifyOnly   ou   setup.bat --verify" -ForegroundColor White
+Write-Host ""
 Write-Host "  Dicas de potencia:" -ForegroundColor Cyan
 Write-Host "    * Navegador: peca 'navegue em X e extraia Y' - usa Chrome local automatico." -ForegroundColor DarkGray
 Write-Host "    * Modelos locais gratis: Ollama (ollama.com) ja configurado em config.yaml" -ForegroundColor DarkGray
@@ -458,5 +585,5 @@ Write-Host "    * Outras IAs no fallback automatico: Copilot (GH_TOKEN), Claude,
 Write-Host "    * n8n: se usou -WithN8nMCP, gere API key em n8n > Settings > API" -ForegroundColor DarkGray
 Write-Host "    * Gateway (Telegram etc): hermes gateway setup  +  gateway run" -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "  Documentacao: README.md  |  Config: config.yaml  |  Chaves: .env" -ForegroundColor DarkGray
+Write-Host "  Documentacao: README.md  |  Config: config.yaml  |  Chaves: .env  |  Logs: logs/" -ForegroundColor DarkGray
 Write-Host ""
