@@ -1,6 +1,8 @@
-# Hermes config — 24/7 grandes sistemas | UX + Segurança + Fallback inteligente
-# HERMES_HOME = raiz do repositório. Gerado a partir de hermes_cli/config_defaults.py.
-# Fallback: ao esgotar tokens (429/402/529/503/context_length) troca automaticamente
+# VORTEX_AI — Hermes config — clone & use (setup.bat)
+# HERMES_HOME = raiz do repositorio (auto-preenchido pelo setup.bat/setup.ps1).
+# Fallback inteligente: ao esgotar tokens (429/402/529/503/context_length) troca
+# automaticamente para o proximo modelo da cadeia, SEM travar.
+# Setup: duplo-clique em setup.bat -> edite .env -> Abrir-Hermes.bat
 
 # ── Modelo principal: Cline (grátis/experimentação) ──
 # Cline usage-billing oferece cotas gratuitas de experimentação em alguns
@@ -25,7 +27,7 @@ fallback_model:
   # ── Cline (usage-billing) — modelos gratuitos/baratos via api.cline.bot ──
   - provider: cline
     model: cline/deepseek/deepseek-chat
-  # ── ClinePass (assinatura $9.99/mês; 2-5x uso em modelos abertos) ──
+  # ── ClinePass (assinatura $9.99/mes; 2-5x uso em modelos abertos) ──
   - provider: cline
     model: cline/cline-pass/deepseek-v4-flash
   - provider: cline
@@ -41,7 +43,12 @@ fallback_model:
   # ── Kimi / Moonshot (KIMI_API_KEY) ──
   - provider: kimi-coding
     model: kimi-k2-turbo-preview
-  # ── Camada gratuita (OpenRouter :free) ──
+  # ── Camada gratuita (OpenRouter :free) - auto-router + modelos verificados 2026-08 ──
+  # openrouter/free = roteador que escolhe sozinho o melhor :free disponivel (mais resiliente)
+  - provider: openrouter
+    model: openrouter/free
+  - provider: openrouter
+    model: z-ai/glm-5.2:free
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
   - provider: openrouter
@@ -51,7 +58,7 @@ fallback_model:
   # ── LM Studio local (app aberto + servidor :1234 habilitado) ──
   - provider: lmstudio-local
     model: "qwen2.5-coder-14b-instruct"   # ajuste p/ um modelo que instalou no app
-  # ── Camada local (PC) — Ollama (offline, ilimitada) ──
+  # ── Camada local (PC) — Ollama (offline, ilimitada, 100% gratis) ──
   - provider: ollama-local
     model: "qwen2.5-coder:32b"
   - provider: ollama-local
@@ -66,7 +73,7 @@ fallback_providers:
   # ── Cline (usage-billing) — modelos gratuitos/baratos via api.cline.bot ──
   - provider: cline
     model: cline/deepseek/deepseek-chat
-  # ── ClinePass (assinatura $9.99/mês; 2-5x uso em modelos abertos) ──
+  # ── ClinePass (assinatura $9.99/mes; 2-5x uso em modelos abertos) ──
   - provider: cline
     model: cline/cline-pass/deepseek-v4-flash
   - provider: cline
@@ -82,7 +89,11 @@ fallback_providers:
   # ── Kimi / Moonshot (KIMI_API_KEY) ──
   - provider: kimi-coding
     model: kimi-k2-turbo-preview
-  # ── Camada gratuita (OpenRouter :free) ──
+  # ── Camada gratuita (OpenRouter :free) - auto-router + modelos verificados 2026-08 ──
+  - provider: openrouter
+    model: openrouter/free
+  - provider: openrouter
+    model: z-ai/glm-5.2:free
   - provider: openrouter
     model: meta-llama/llama-3.3-70b-instruct:free
   - provider: openrouter
@@ -92,7 +103,7 @@ fallback_providers:
   # ── LM Studio local (app aberto + servidor :1234 habilitado) ──
   - provider: lmstudio-local
     model: "qwen2.5-coder-14b-instruct"   # ajuste p/ um modelo que instalou no app
-  # ── Camada local (PC) — Ollama (offline, ilimitada) ──
+  # ── Camada local (PC) — Ollama (offline, ilimitada, 100% gratis) ──
   - provider: ollama-local
     model: "qwen2.5-coder:32b"
   - provider: ollama-local

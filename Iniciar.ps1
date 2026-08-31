@@ -9,17 +9,27 @@ $env:HERMES_HOME = $root
 function Show-Menu {
   Clear-Host
   Write-Host "==========================================" -ForegroundColor Cyan
-  Write-Host "  Hermes + OpenCode - Raiz: $root" -ForegroundColor White
+  Write-Host "  VORTEX_AI - Hermes + OpenCode" -ForegroundColor White
+  Write-Host "  Raiz: $root" -ForegroundColor DarkGray
   Write-Host "==========================================" -ForegroundColor Cyan
   Write-Host ""
-  Write-Host "  1) OpenCode na RAIZ (hermes/)" -ForegroundColor Green -NoNewline; Write-Host "  -> opencode.jsonc + mcp.hermes"
-  Write-Host "  2) OpenCode no AGENT (hermes-agent/)" -ForegroundColor Green -NoNewline; Write-Host "  -> codigo fonte"
+  $hasHermes = (Test-Path "$root\hermes-agent\venv\Scripts\hermes.exe") -or (Test-Path "$root\bin\hermes.exe")
+  $hasEnv = Test-Path "$root\.env"
+  $hasNode = $null -ne (Get-Command node -ErrorAction SilentlyContinue)
+  if (-not $hasHermes) { Write-Host "  [!] Setup nao executado - escolha 7 para instalar" -ForegroundColor Red }
+  elseif (-not $hasEnv) { Write-Host "  [!] .env nao encontrado - rode setup.bat" -ForegroundColor Yellow }
+  Write-Host ""
+  Write-Host "  1) OpenCode na RAIZ (hermes/)" -ForegroundColor Green -NoNewline; Write-Host "  -> opencode.jsonc + mcp.hermes" -ForegroundColor DarkGray
+  Write-Host "  2) OpenCode no AGENT (hermes-agent/)" -ForegroundColor Green -NoNewline; Write-Host "  -> codigo fonte" -ForegroundColor DarkGray
   Write-Host "  3) Hermes CLI" -ForegroundColor Yellow
   Write-Host "  4) Hermes TUI (Ink)" -ForegroundColor Yellow
   Write-Host "  5) Hermes Gateway (mensagens)" -ForegroundColor Magenta
   Write-Host "  6) Abrir pasta no Explorer" -ForegroundColor Gray
+  Write-Host "  7) Setup / Reinstalar dependencias" -ForegroundColor Cyan -NoNewline; Write-Host "  -> setup.bat" -ForegroundColor DarkGray
+  Write-Host "  8) Editar .env (chaves API)" -ForegroundColor DarkCyan
   Write-Host "  0) Sair" -ForegroundColor DarkGray
   Write-Host ""
+  if (-not $hasNode) { Write-Host "  (Node nao encontrado - OpenCode precisa de Node.js https://nodejs.org/)" -ForegroundColor DarkGray }
 }
 
 function Test-Opencode {
@@ -43,7 +53,7 @@ function Get-HermesExe {
 
 while ($true) {
   Show-Menu
-  $c = Read-Host "Escolha [0-6]"
+  $c = Read-Host "Escolha [0-8]"
   switch ($c) {
     "1" {
       Set-Location $root
@@ -80,6 +90,22 @@ while ($true) {
       Pause
     }
     "6" { explorer.exe $root }
+    "7" {
+      Write-Host "`nExecutando setup.ps1 ..." -ForegroundColor Cyan
+      & powershell -ExecutionPolicy Bypass -File "$root\setup.ps1"
+      Pause
+    }
+    "8" {
+      $envFile = Join-Path $root ".env"
+      if (Test-Path $envFile) {
+        Write-Host "`nAbrindo .env em $envFile ..." -ForegroundColor Cyan
+        try { notepad.exe $envFile } catch { Write-Host "Abra manualmente: $envFile" -ForegroundColor Yellow }
+      } else {
+        Write-Host ".env nao encontrado. Rode setup (opcao 7) primeiro." -ForegroundColor Yellow
+        if (Test-Path "$root\.env.example") { Write-Host "Modelo: $root\.env.example" -ForegroundColor DarkGray }
+      }
+      Pause
+    }
     "0" { return }
     default { Write-Host "Opcao invalida" -ForegroundColor Red; Start-Sleep 1 }
   }

@@ -27,10 +27,11 @@ Este repositório já chega **pronto para uso**: um único comando de setup esca
 VORTEX_AI/
 ├─ hermes-agent/          # código-fonte do Hermes Agent (upstream, MIT)
 ├─ gateway-service/       # launchers do gateway (cmd/vbs)
-├─ bin/                   # executáveis gerados pelo setup.ps1 (não versionados)
+├─ bin/                   # executáveis gerados pelo setup (não versionados)
 ├─ config.yaml            # configuração do agente (modelos, fallback, memória, segurança)
 ├─ opencode.jsonc         # bridge MCP Hermes ↔ OpenCode
-├─ setup.ps1              # instalador / resolvedor de dependências (1 comando)
+├─ setup.bat              # instalador 1-clique (duplo-clique) -> chama setup.ps1
+├─ setup.ps1              # instalador / resolvedor de dependências (PowerShell)
 ├─ Iniciar.ps1            # launcher interativo (menu CLI / TUI / Gateway / OpenCode)
 ├─ Abrir-Hermes.bat       # inicia a CLI do Hermes
 ├─ Abrir-Hermes-TUI.bat   # inicia a interface TUI
@@ -54,36 +55,49 @@ VORTEX_AI/
 
 ---
 
-## 🚀 Instalação (Windows)
+## 🚀 Instalação (Windows) — *clone & use*
 
+> **1 clique:** baixe do GitHub, duplo-clique em `setup.bat` e use. Sem `pip install` manual, sem dor de cabeça.
+
+**Opção A — Duplo-clique (recomendado):**
 ```powershell
 # 1) Clone
 git clone https://github.com/luck-of-luck/VORTEX_AI.git
 cd VORTEX_AI
 
-# 2) Setup: instala/escanéia todas as dependências automaticamente
-powershell -ExecutionPolicy Bypass -File .\setup.ps1
+# 2) Duplo-clique em setup.bat  (ou clique direito -> Executar)
+#    Ele chama o setup.ps1, instala tudo e cria o .env automaticamente
 
-# 3) Configure suas chaves de API
-#    O setup cria o .env automaticamente. Edite-o e preencha pelo menos uma
-#    chave (recomendado: OPENROUTER_API_KEY).
+# 3) Edite .env (o setup pergunta se quer abrir) e preencha PELO MENOS UMA:
+#    CLINE_API_KEY (gratis: https://app.cline.bot) ou OPENROUTER_API_KEY
+#    Alternativa 100% offline: instale Ollama (https://ollama.com) e pule chave
 
-# 4) Pronto! Inicie
-.\.Abrir-Hermes.bat
+# 4) Pronto! Duplo-clique em Abrir-Hermes.bat
 ```
 
-O `setup.ps1` faz tudo de forma **reprodutível** (usa o `uv.lock` do hermes-agent):
+**Opção B — Terminal (mesmo resultado):**
+```powershell
+git clone https://github.com/luck-of-luck/VORTEX_AI.git
+cd VORTEX_AI
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+# ou: .\setup.bat
+notepad .env   # preencha 1 chave
+.\Abrir-Hermes.bat
+```
+
+O `setup.bat` / `setup.ps1` faz tudo de forma **reprodutível** (usa o `uv.lock` do hermes-agent):
 
 | Etapa | O que faz |
 |-------|-----------|
-| 1 | Valida / instala **Python 3.11–3.13** (winget) |
+| 1 | Valida / instala **Python 3.11–3.13** (winget ou instruções manuais) |
 | 2 | Instala o gerenciador **uv** (Astral) |
-| 3 | Sincroniza as dependências do `hermes-agent` |
-| 4 | Gera os executáveis em `bin\` (hermes, hermes-acp) |
-| 5 | Cria `.env` a partir do `.env.example` |
+| 3 | Sincroniza as dependências do `hermes-agent` (`uv sync`) |
+| 4 | Gera os executáveis em `bin\` (hermes, hermes-acp, uv) |
+| 5 | Cria `.env` a partir do `.env.example` + wizard de chaves (abre no bloco de notas se interativo) |
+| 6 | Verifica **Node/npm + opencode** e **Ollama/LM Studio** (100% gratis/offline), oferece instalar |
 
-> Extras opcionais (mensageria, MCP, etc.): `setup.ps1 -Extras "messaging,mcp"` (padrão).
-> Instala também o bridge do **n8n** com `-WithN8nMCP`. Suporta `-SkipPythonCheck`.
+> Extras opcionais: `setup.bat -Extras "messaging,mcp"` (padrão) ou `setup.ps1 -Extras "messaging,mcp"`.
+> n8n: `setup.bat -WithN8nMCP` ou `setup.ps1 -WithN8nMCP`. Flags: `-SkipPythonCheck`, `-NonInteractive`, `-SkipNodeCheck`.
 
 ---
 
@@ -142,14 +156,14 @@ Gere uma **API key** no n8n (**Settings → API**), preencha `N8N_BASE_URL` e `N
 - **Contextos enormes:** limites de leitura elevados (`context_file_max_chars`/`file_read_max_chars` = 400k, saída de tools de até 150k) para o agente trabalhar com bases de código inteiras.
 
 ### ⚡ Muito mais agentes gratuitos (zero IAs pagas)
-A cadeia de fallback (`config.yaml`) é **100% gratuita/barata** e troca automaticamente quando o principal falha:
+A cadeia de fallback (`config.yaml`) é **100% gratuita/barata** e troca automaticamente quando o principal falha (429/quota/429):
 
 | Camada | Provedor | Modelos |
 |--------|----------|---------|
 | 🥇 Cline billing | `api.cline.bot` | `minimax/minimax-m2.5` (principal), `deepseek/deepseek-chat` |
 | 🥈 ClinePass | `api.cline.bot` | `cline-pass/deepseek-v4-flash`, `cline-pass/qwen3.7-plus`, `cline-pass/glm-5.2` |
-| 🥉 OpenRouter **`:free`** | openrouter.ai | Llama 3.3 70B, Qwen 2.5 72B, Nemotron |
-| 🏠 Local (Ollama) | seu PC | `qwen2.5-coder:32b`, `llama3.3:70b` (offline, ilimitado) |
+| 🥉 OpenRouter **`:free`** | openrouter.ai | `openrouter/free` (auto-router), `z-ai/glm-5.2:free`, Llama 3.3 70B, Qwen 2.5 72B |
+| 🏠 Local (Ollama/LM Studio) | seu PC | `qwen2.5-coder:32b`, `llama3.3:70b` (offline, ilimitado) |
 
 ```bash
 # 1) Crie sua chave gratuita/barata do Cline
@@ -174,9 +188,9 @@ O `config.yaml` já integra os **provedores** e os **CLIs** das IAs instaladas
 | 6 | **GitHub Copilot** (gpt-4.1) | `COPILOT_GITHUB_TOKEN`/`GH_TOKEN` |
 | 7 | **Claude / Anthropic** | `ANTHROPIC_API_KEY` |
 | 8 | **Kimi / Moonshot** | `KIMI_API_KEY` |
-| 9-11 | OpenRouter `:free` | `OPENROUTER_API_KEY` |
-| 12 | **LM Studio** (local) | abra o app → Developer → Start Server |
-| 13-16 | **Ollama** (local, offline) | `ollama serve` + modelos instalados |
+| 9-13 | OpenRouter `:free` | `OPENROUTER_API_KEY` (ou `openrouter/free` auto) |
+| 14 | **LM Studio** (local) | abra o app → Developer → Start Server (`:1234`) |
+| 15-18 | **Ollama** (local, offline) | `ollama serve` + `ollama pull qwen2.5-coder:32b` |
 
 **Delegar tarefas a outros agentes** (Claude Code, Cursor, Qoder, Zed, Kimi,
 OpenCode) via terminal — headless, um por vez:
@@ -250,8 +264,11 @@ Troque de modelo a qualquer momento com `/model` no chat, ou edite `config.yaml`
 ## 🛟 Solução de problemas
 
 - **Antivírus acusa `uv.exe`:** falso positivo conhecido (binário Rust da Astral). Exclua a pasta `bin\` do AV ou valide via attestation (veja README do hermes-agent).
-- **`hermes` não é reconhecido:** rode o `setup.ps1` novamente ou use `hermes-agent\venv\Scripts\hermes.exe`.
+- **`hermes` não é reconhecido:** rode o `setup.bat` (ou `setup.ps1`) novamente ou use `hermes-agent\venv\Scripts\hermes.exe`.
+- **`setup.bat` não abre / pisca e fecha:** clique direito → **Executar com PowerShell** ou rode `powershell -ExecutionPolicy Bypass -File setup.ps1` no terminal dentro da pasta.
+- **Python não encontrado:** instale em https://www.python.org/downloads/ (marque **Add to PATH**) e rode `setup.bat` de novo. Ou: `winget install Python.Python.3.12`.
 - **Gateway não inicia:** confira as chaves da plataforma no `.env` e os logs em `logs\`.
+- **Sem chave API?** Use **Ollama 100% offline**: https://ollama.com → `ollama pull qwen2.5-coder:32b` → `ollama serve` → já funciona sem chave.
 
 ---
 
