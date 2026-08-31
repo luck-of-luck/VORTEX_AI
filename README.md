@@ -26,10 +26,14 @@ Este repositório já chega **pronto para uso**: um único comando de setup esca
 ```
 VORTEX_AI/
 ├─ hermes-agent/          # código-fonte do Hermes Agent (upstream, MIT)
+│  ├─ skills/             # 16 categorias, 80+ skills (vortex, github, opencode...)
+│  └─ opencode.jsonc      # config opencode upstream (usa ../bin/hermes.exe)
+├─ .opencode/
+│  └─ skills/vortex-hermes/ # BRIDGE VORTEX: opencode + Hermes (este repo)
 ├─ gateway-service/       # launchers do gateway (cmd/vbs)
 ├─ bin/                   # executáveis gerados pelo setup (não versionados)
 ├─ config.yaml            # configuração do agente (modelos, fallback, memória, segurança)
-├─ opencode.jsonc         # bridge MCP Hermes ↔ OpenCode
+├─ opencode.jsonc         # CONFIG PRINCIPAL — Hermes MCP + ollama/lmstudio + skills
 ├─ setup.bat              # instalador 1-clique (duplo-clique) -> chama setup.ps1
 ├─ setup.ps1              # instalador / resolvedor de dependências (PowerShell)
 ├─ Iniciar.ps1            # launcher interativo (menu CLI / TUI / Gateway / OpenCode)
@@ -117,14 +121,38 @@ powershell -ExecutionPolicy Bypass -File .\Iniciar.ps1
 .\hermes-agent\venv\Scripts\hermes.exe
 ```
 
-### OpenCode (opcional)
+### OpenCode + Hermes — editor IA com skills e MCP (integrado)
+
+> **VORTEX_AI já vem com `opencode.jsonc` configurado para usar Hermes como MCP + providers locais.**
 
 ```powershell
-npm install -g opencode-ai
-opencode
+npm install -g opencode-ai   # se setup.bat não instalou
+opencode                     # TUI (ou: Abrir-OpenCode.bat)
+opencode mcp list            # deve mostrar: hermes ✓ connected
 ```
 
-O `opencode.jsonc` já conecta o **MCP `hermes`** (`bin\hermes.exe mcp serve`) automaticamente.
+**O que já vem pronto em `opencode.jsonc` (raiz):**
+- **MCP `hermes`** (`bin/hermes.exe mcp serve`) — 80+ skills Hermes dentro do opencode (gateway, cron, memory, browser, delegate...)
+- **MCP `context7`** (desabilitado) — docs atualizadas de qualquer lib (`mcp invoke context7 ...`)
+- **MCP `n8n`** (desabilitado) — após `hermes mcp install n8n` habilite em `opencode.jsonc`
+- **Providers espelhados do `config.yaml`:** `cline` (minimax/deepseek), `openrouter` (`openrouter/free`, `z-ai/glm-5.2:free`), `ollama-local` (`qwen2.5-coder:32b`, `llama3.3:70b`), `lmstudio-local` (`:1234`)
+- **References + Instructions:** `AGENTS.md` + `SOUL.md` + `hermes-agent/AGENTS.md` + catálogo `hermes-agent/skills` + bridge `.opencode/skills/vortex-hermes`
+
+**Skill bridge `vortex-hermes`:** leia `.opencode/skills/vortex-hermes/SKILL.md` antes de codar no VORTEX via opencode. Ele ensina:
+- quando usar Hermes via MCP (`hermes_*` tools) vs delegar para Hermes (`terminal: opencode run`)
+- como carregar skills `vortex/*` e `github/*` dentro do opencode
+- pitfalls (prompt caching, Windows home `%LOCALAPPDATA%\hermes`, reiniciar opencode após editar `opencode.jsonc`)
+
+**Delegação cruzada:**
+```bash
+# Hermes → OpenCode (skill autonomous-ai-agents/opencode via Hermes)
+opencode run "implemente X" -f file.ts
+
+# OpenCode → Hermes (MCP hermes dentro do opencode)
+# no prompt do opencode: "use hermes to run browser_navigate ..."
+```
+
+> Após editar `opencode.jsonc`, **reinicie o opencode** (config não hot-reload).
 
 ### Gateway (Telegram, Discord, WhatsApp, Signal…)
 

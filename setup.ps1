@@ -522,6 +522,20 @@ $checks += @{ nome="opencode"; ok=$opencodeOk; detalhe=if($opencodeOk){try{& ope
 $checks += @{ nome="Ollama local"; ok=$ollamaOk; detalhe=if($ollamaOk){"instalado (fallback 100% offline)"}else{"opcional - https://ollama.com/"} }
 $checks += @{ nome="Git"; ok=$gitOk; detalhe=if($gitOk){try{& git --version 2>$null}catch{"ok"}}else{"recomendado para clone/commit"} }
 $checks += @{ nome="config.yaml"; ok=(Test-Path (Join-Path $root "config.yaml")); detalhe="fallback inteligente configurado" }
+# --- VORTEX: opencode + Hermes bridge ---
+$opencodeJsonOk = Test-Path (Join-Path $root "opencode.jsonc")
+$checks += @{ nome="opencode.jsonc"; ok=$opencodeJsonOk; detalhe=if($opencodeJsonOk){"Hermes MCP + ollama/lmstudio"}else{"faltando - git pull?"} }
+$vortexSkillOk = Test-Path (Join-Path $root ".opencode\skills\vortex-hermes\SKILL.md")
+$checks += @{ nome="vortex-hermes skill"; ok=$vortexSkillOk; detalhe=if($vortexSkillOk){"bridge opencode+Hermes"}else{"faltando"} }
+# testa hermes MCP serve rapidamente (se hermes ok)
+$hermesMcpOk = $false
+if ($hermOk) {
+    try {
+        $mcpHelp = & $hermTest mcp --help 2>&1 | Out-String
+        if ($mcpHelp -match "mcp") { $hermesMcpOk = $true }
+    } catch {}
+}
+$checks += @{ nome="Hermes MCP"; ok=$hermesMcpOk; detalhe=if($hermesMcpOk){"bin/hermes.exe mcp serve OK"}else{"falhou - .env/config?" } }
 
 Write-Host ""
 Write-Host "  ----------------------------------------------------------" -ForegroundColor Cyan
