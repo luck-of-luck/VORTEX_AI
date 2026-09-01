@@ -30,17 +30,21 @@ VORTEX_AI/
 │  └─ opencode.jsonc      # config opencode upstream (usa ../bin/hermes.exe)
 ├─ .opencode/
 │  └─ skills/vortex-hermes/ # BRIDGE VORTEX: opencode + Hermes (este repo)
+├─ proton/                # PROTON — JARVIS app (RTX + neon + fluid, index.html)
+│  ├─ index.html          # app single-file (Tailwind + Three.js + Canvas)
+│  └─ README.md           # docs PROTON
 ├─ gateway-service/       # launchers do gateway (cmd/vbs)
 ├─ bin/                   # executáveis gerados pelo setup (não versionados)
 ├─ config.yaml            # configuração do agente (modelos, fallback, memória, segurança)
 ├─ opencode.jsonc         # CONFIG PRINCIPAL — Hermes MCP + ollama/lmstudio + skills
 ├─ setup.bat              # instalador 1-clique (duplo-clique) -> chama setup.ps1
 ├─ setup.ps1              # instalador / resolvedor de dependências (PowerShell)
-├─ Iniciar.ps1            # launcher interativo (menu CLI / TUI / Gateway / OpenCode)
+├─ Iniciar.ps1            # launcher interativo (menu CLI / TUI / Gateway / OpenCode / PROTON)
 ├─ Abrir-Hermes.bat       # inicia a CLI do Hermes
 ├─ Abrir-Hermes-TUI.bat   # inicia a interface TUI
 ├─ Abrir-OpenCode.bat     # inicia o OpenCode na raiz do projeto
 ├─ Abrir-OpenCode-Web.bat # inicia o OpenCode Web
+├─ Abrir-PROTON.bat       # ★ novo: abre PROTON JARVIS (proton/index.html)
 ├─ .env.example           # modelo de variáveis de ambiente
 ├─ SOUL.md                # persona / instruções do agente
 └─ README.md
@@ -153,6 +157,22 @@ opencode run "implemente X" -f file.ts
 ```
 
 > Após editar `opencode.jsonc`, **reinicie o opencode** (config não hot-reload).
+
+### PROTON — JARVIS (RTX + Neon) — seu app independente
+
+> **Novo:** `proton/index.html` — interface **RTX raytracing** com grafite metálico + neon quente, fluidez 60FPS, como um **JARVIS** para o Hermes.
+
+```powershell
+Abrir-PROTON.bat          # duplo-clique (ou start proton\index.html)
+# ou
+powershell -File Iniciar.ps1  # 9) PROTON
+```
+
+- **Visual:** Three.js `MeshPhysicalMaterial` (clearcoat, transmissão, CubeCamera envMap) + 3 luzes pontuais (laranja/magenta/cyan) + canvas fluido com 140 partículas + glassmorphism + grid perspectiva + noise
+- **Chat:** conectado ao Hermes Gateway (`http://127.0.0.1:3010` se rodando) ou mock inteligente; voz via Web Speech API (Chrome/Edge), orbe pulsante, VU meter
+- **HUD:** SYSTEM (CPU/MEM/GPU RTX), HERMES (model, MCP), SENSORES (browser/terminal/gateway)
+- **Atalhos:** `Enter` enviar, `Ctrl+K` limpar, `Ctrl+M` mic, `/imagine` gerar imagem
+- Veja `proton/README.md` para detalhes e roadmap (Electron, wake word).
 
 ### Gateway (Telegram, Discord, WhatsApp, Signal…)
 

@@ -536,6 +536,11 @@ if ($hermOk) {
     } catch {}
 }
 $checks += @{ nome="Hermes MCP"; ok=$hermesMcpOk; detalhe=if($hermesMcpOk){"bin/hermes.exe mcp serve OK"}else{"falhou - .env/config?" } }
+# --- PROTON JARVIS ---
+$protonOk = Test-Path (Join-Path $root "proton\index.html")
+$checks += @{ nome="PROTON JARVIS"; ok=$protonOk; detalhe=if($protonOk){"RTX + neon + fluid (Abrir-PROTON.bat)"}else{"faltando - git pull"} }
+$protonBatOk = Test-Path (Join-Path $root "Abrir-PROTON.bat")
+$checks += @{ nome="Abrir-PROTON.bat"; ok=$protonBatOk; detalhe=if($protonBatOk){"launcher PROTON"}else{"faltando"} }
 
 Write-Host ""
 Write-Host "  ----------------------------------------------------------" -ForegroundColor Cyan

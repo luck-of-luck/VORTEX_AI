@@ -27,6 +27,7 @@ function Show-Menu {
   Write-Host "  6) Abrir pasta no Explorer" -ForegroundColor Gray
   Write-Host "  7) Setup / Reinstalar dependencias" -ForegroundColor Cyan -NoNewline; Write-Host "  -> setup.bat" -ForegroundColor DarkGray
   Write-Host "  8) Editar .env (chaves API)" -ForegroundColor DarkCyan
+  Write-Host "  9) PROTON — JARVIS (RTX + Neon)" -ForegroundColor Magenta -NoNewline; Write-Host "  -> proton/index.html" -ForegroundColor DarkGray
   Write-Host "  0) Sair" -ForegroundColor DarkGray
   Write-Host ""
   if (-not $hasNode) { Write-Host "  (Node nao encontrado - OpenCode precisa de Node.js https://nodejs.org/)" -ForegroundColor DarkGray }
@@ -53,7 +54,7 @@ function Get-HermesExe {
 
 while ($true) {
   Show-Menu
-  $c = Read-Host "Escolha [0-8]"
+  $c = Read-Host "Escolha [0-9]"
   switch ($c) {
     "1" {
       Set-Location $root
@@ -103,6 +104,17 @@ while ($true) {
       } else {
         Write-Host ".env nao encontrado. Rode setup (opcao 7) primeiro." -ForegroundColor Yellow
         if (Test-Path "$root\.env.example") { Write-Host "Modelo: $root\.env.example" -ForegroundColor DarkGray }
+      }
+      Pause
+    }
+    "9" {
+      $proton = Join-Path $root "proton\index.html"
+      if (Test-Path $proton) {
+        Write-Host "`nAbrindo PROTON — JARVIS ..." -ForegroundColor Magenta
+        Write-Host "  $proton" -ForegroundColor DarkGray
+        try { Start-Process $proton } catch { Write-Host "Abra manualmente: $proton" -ForegroundColor Yellow }
+      } else {
+        Write-Host "proton\index.html nao encontrado. Faça git pull." -ForegroundColor Yellow
       }
       Pause
     }
